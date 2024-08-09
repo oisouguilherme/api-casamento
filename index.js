@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -12,8 +13,26 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-let gifts = [];
-let confirmations = [];
+const GIFTS_FILE = './data/gifts.json';
+const CONFIRMATIONS_FILE = './data/confirmations.json';
+
+// Função para carregar dados de um arquivo JSON
+const loadData = (file) => {
+  if (fs.existsSync(file)) {
+    const data = fs.readFileSync(file, 'utf8');
+    return JSON.parse(data);
+  }
+  return [];
+};
+
+// Função para salvar dados em um arquivo JSON
+const saveData = (file, data) => {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+};
+
+// Carregar dados salvos
+let gifts = loadData(GIFTS_FILE);
+let confirmations = loadData(CONFIRMATIONS_FILE);
 
 // Endpoint para adicionar um presente
 app.post('/gifts', (req, res) => {
@@ -25,6 +44,7 @@ app.post('/gifts', (req, res) => {
 
   const gift = { name, email, giftMethod, giftId };
   gifts.push(gift);
+  saveData(GIFTS_FILE, gifts);
 
   res.status(201).json(gift);
 });
@@ -38,6 +58,7 @@ app.get('/gifts', (req, res) => {
 app.delete('/gifts/:id', (req, res) => {
   const giftId = parseInt(req.params.id, 10);
   gifts = gifts.filter(gift => gift.giftId !== giftId);
+  saveData(GIFTS_FILE, gifts);
 
   res.status(204).end(); // No content
 });
@@ -52,6 +73,7 @@ app.post('/confirm', (req, res) => {
 
   const confirmation = { name, phone, message, id: confirmations.length + 1 };
   confirmations.push(confirmation);
+  saveData(CONFIRMATIONS_FILE, confirmations);
 
   res.status(201).json(confirmation);
 });
@@ -65,6 +87,7 @@ app.get('/confirmations', (req, res) => {
 app.delete('/confirmations/:id', (req, res) => {
   const confirmationId = parseInt(req.params.id, 10);
   confirmations = confirmations.filter(confirmation => confirmation.id !== confirmationId);
+  saveData(CONFIRMATIONS_FILE, confirmations);
 
   res.status(204).end(); // No content
 });
